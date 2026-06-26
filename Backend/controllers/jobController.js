@@ -49,12 +49,13 @@ exports.getJobDetails = asyncHandler(async (req, res) => {
 });
 
 exports.searchJobs = asyncHandler(async (req, res) => {
-  const { q, location } = req.query;
+  const { q, title, location } = req.query;
+  const searchTerm = q || title;
   const filter = {};
-  if (q) {
+  if (searchTerm) {
     filter.$or = [
-      { title: { $regex: q, $options: 'i' } },
-      { description: { $regex: q, $options: 'i' } },
+      { title: { $regex: searchTerm, $options: 'i' } },
+      { description: { $regex: searchTerm, $options: 'i' } },
     ];
   }
   if (location) {

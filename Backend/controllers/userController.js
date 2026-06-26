@@ -19,7 +19,11 @@ exports.uploadProfilePhoto = asyncHandler(async (req, res) => {
     throw new Error('Please upload an image file');
   }
   const user = await userService.uploadProfilePicture(req.user._id, req.file.buffer);
-  return apiResponse.success(res, 'Profile photo uploaded successfully', { profilePicture: user.profilePicture });
+  return apiResponse.success(res, 'Profile photo uploaded successfully', { 
+    profilePicture: user.profilePicture,
+    profilePhoto: user.profilePicture,
+    url: user.profilePicture
+  });
 });
 
 exports.uploadCoverPhoto = asyncHandler(async (req, res) => {
@@ -28,7 +32,10 @@ exports.uploadCoverPhoto = asyncHandler(async (req, res) => {
     throw new Error('Please upload an image file');
   }
   const user = await userService.uploadCoverPhoto(req.user._id, req.file.buffer);
-  return apiResponse.success(res, 'Cover photo uploaded successfully', { coverPhoto: user.coverPhoto });
+  return apiResponse.success(res, 'Cover photo uploaded successfully', { 
+    coverPhoto: user.coverPhoto,
+    url: user.coverPhoto
+  });
 });
 
 // Experience section

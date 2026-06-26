@@ -85,4 +85,17 @@ UserSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
+// Add virtual field for profilePhoto mapping
+UserSchema.virtual('profilePhoto')
+  .get(function() {
+    return this.profilePicture;
+  })
+  .set(function(value) {
+    this.profilePicture = value;
+  });
+
+// Ensure virtuals are included in serialization
+UserSchema.set('toJSON', { virtuals: true });
+UserSchema.set('toObject', { virtuals: true });
+
 module.exports = mongoose.model('User', UserSchema);
