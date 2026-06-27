@@ -7,7 +7,7 @@ const initSocket = (server) => {
   io = socketIO(server, {
     pingTimeout: 60000,
     cors: {
-      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+      origin: process.env.FRONTEND_URL || 'linkedin-clone-project-fawn.vercel.app',
       methods: ['GET', 'POST'],
       credentials: true,
     },

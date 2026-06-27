@@ -8,7 +8,7 @@ const app = express();
 
 // CORS options
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'https://linkedin-project-eta.vercel.app',
   credentials: true,
 }));
 
