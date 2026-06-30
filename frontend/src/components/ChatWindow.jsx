@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../context/AuthContext';
-import API from '../api/axios';
+import API, { probeBackend } from '../api/axios';
 import toast from 'react-hot-toast';
 import { Send, Loader2 } from 'lucide-react';
 import io from 'socket.io-client';
 
-export default function ChatWindow({ conversationId, recipient, onMessageReceived }) {
+export default function ChatWindow({ conversationId, recipient, onMessageReceived, onBack }) {
   const { user } = useAuth();
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,6 +23,10 @@ export default function ChatWindow({ conversationId, recipient, onMessageReceive
 
   // Fetch Message Thread
   const fetchMessages = async () => {
+    if (conversationId && conversationId.startsWith('temp_')) {
+      setMessages([]);
+      return;
+    }
     setLoading(true);
     try {
       const res = await API.get(`/messages/conversation/${conversationId}`);
@@ -50,49 +54,47 @@ export default function ChatWindow({ conversationId, recipient, onMessageReceive
   useEffect(() => {
     if (!conversationId) return;
 
-    const getSocketURL = () => {
-      const envSocket = import.meta.env.VITE_SOCKET_URL;
-      if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-        if (envSocket && (envSocket.includes('localhost') || envSocket.includes('127.0.0.1'))) {
-          return envSocket;
-        }
-        return 'http://localhost:5000';
-      }
-      return envSocket || 'https://linkedin-clone-project-4f7z.onrender.com';
-    };
+    let socketInstance = null;
+    let active = true;
 
-    // Establish connection
-    socketRef.current = io(getSocketURL(), {
-      withCredentials: true
+    probeBackend().then(({ socketURL }) => {
+      if (!active) return;
+
+      // Establish connection
+      socketInstance = io(socketURL, {
+        withCredentials: true
+      });
+      socketRef.current = socketInstance;
+
+      // Register user in socket
+      if (user) {
+        socketInstance.emit('setup', user);
+      }
+
+      // Join the conversation room
+      socketInstance.emit('join_chat', conversationId);
+
+      // Setup multiple listener events to be safe
+      const handleNewMessage = (data) => {
+        // Backend wraps message inside 'message' key, fallback to direct object
+        const newMsg = data.message || data;
+        const msgConvId = newMsg.conversationId || newMsg.conversation;
+        if (msgConvId === conversationId) {
+          setMessages(prev => [...prev, newMsg]);
+          if (onMessageReceived) onMessageReceived();
+        }
+      };
+
+      socketInstance.on('message', handleNewMessage);
+      socketInstance.on('newMessage', handleNewMessage);
+      socketInstance.on('receiveMessage', handleNewMessage);
+      socketInstance.on('message_received', handleNewMessage);
     });
 
-    // Register user in socket
-    if (user) {
-      socketRef.current.emit('setup', user);
-    }
-
-    // Join the conversation room
-    socketRef.current.emit('join_chat', conversationId);
-
-    // Setup multiple listener events to be safe
-    const handleNewMessage = (data) => {
-      // Backend wraps message inside 'message' key, fallback to direct object
-      const newMsg = data.message || data;
-      const msgConvId = newMsg.conversationId || newMsg.conversation;
-      if (msgConvId === conversationId) {
-        setMessages(prev => [...prev, newMsg]);
-        if (onMessageReceived) onMessageReceived();
-      }
-    };
-
-    socketRef.current.on('message', handleNewMessage);
-    socketRef.current.on('newMessage', handleNewMessage);
-    socketRef.current.on('receiveMessage', handleNewMessage);
-    socketRef.current.on('message_received', handleNewMessage);
-
     return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
+      active = false;
+      if (socketInstance) {
+        socketInstance.disconnect();
       }
     };
   }, [conversationId, user]);
@@ -101,10 +103,10 @@ export default function ChatWindow({ conversationId, recipient, onMessageReceive
     if (!data.messageText.trim()) return;
     setSending(true);
     try {
-      const recipientId = recipient._id || recipient.id;
+      const receiverId = recipient._id || recipient.id;
       const res = await API.post('/messages/send', {
-        recipientId,
-        messageText: data.messageText
+        receiverId,
+        content: data.messageText
       });
 
       const payload = res.data.data || res.data;
@@ -129,6 +131,17 @@ export default function ChatWindow({ conversationId, recipient, onMessageReceive
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm h-full flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-gray-150 flex items-center gap-3">
+        {onBack && (
+          <button 
+            onClick={onBack} 
+            className="md:hidden text-gray-500 hover:text-gray-700 p-1 mr-1 -ml-1 rounded-full hover:bg-gray-100 transition"
+            aria-label="Back to messages list"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+          </button>
+        )}
         {recipient.profilePhoto ? (
           <img src={recipient.profilePhoto} alt={recipient.name} className="h-9 w-9 rounded-full object-cover" />
         ) : (
@@ -149,7 +162,7 @@ export default function ChatWindow({ conversationId, recipient, onMessageReceive
         ) : (
           messages.map((msg, index) => {
             const sender = msg.sender || {};
-            const senderId = sender._id || sender.id || msg.senderId;
+            const senderId = sender._id || sender.id || msg.senderId || msg.sender;
             const currentUserId = user?._id || user?.id;
             const isMe = senderId === currentUserId;
 
@@ -161,7 +174,7 @@ export default function ChatWindow({ conversationId, recipient, onMessageReceive
                       {recipient.name}
                     </span>
                   )}
-                  <p className="whitespace-pre-wrap leading-relaxed">{msg.messageText}</p>
+                  <p className="whitespace-pre-wrap leading-relaxed">{msg.content || msg.messageText}</p>
                   <span className={`text-[9px] block text-right mt-1.5 ${isMe ? 'text-blue-100' : 'text-gray-400'}`}>
                     {msg.createdAt ? new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Now'}
                   </span>

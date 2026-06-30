@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useForm } from 'react-hook-form';
 import API from '../api/axios';
 import toast from 'react-hot-toast';
+import PostCard from '../components/PostCard';
 import { 
   Camera, Edit, Plus, Trash2, Edit3, Loader2, MapPin, 
   Briefcase, GraduationCap, Award, ThumbsUp, Calendar, X 
@@ -17,6 +18,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
+  const [userPosts, setUserPosts] = useState([]);
+  const [loadingPosts, setLoadingPosts] = useState(false);
 
   // Modals / Edit Forms State
   const [editInfoOpen, setEditInfoOpen] = useState(false);
@@ -34,8 +37,36 @@ export default function ProfilePage() {
   const { register: eduRegister, handleSubmit: handleEduSubmit, reset: resetEdu, setValue: setEduValue } = useForm();
   const { register: skillRegister, handleSubmit: handleSkillSubmit, reset: resetSkill } = useForm();
 
-  const fetchProfile = async () => {
-    setLoading(true);
+  const fetchUserPosts = async (userId) => {
+    setLoadingPosts(true);
+    try {
+      let res;
+      try {
+        // Try specific user posts endpoint first
+        res = await API.get(`/posts/user/${userId}`);
+      } catch (e) {
+        // Fallback: fetch feed posts and filter for matches locally
+        const feedRes = await API.get('/posts/feed');
+        const feedList = feedRes.data.data || feedRes.data || [];
+        res = {
+          data: feedList.filter(post => {
+            const author = post.author || post.user || {};
+            const authorId = author._id || author.id || author;
+            return authorId === userId;
+          })
+        };
+      }
+      const postsData = res.data.data || res.data || [];
+      setUserPosts(Array.isArray(postsData) ? postsData : []);
+    } catch (err) {
+      console.error('Error fetching user posts', err);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
+  const fetchProfile = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       let res;
       // If no ID or ID matches current user's ID, fetch own profile
@@ -57,6 +88,9 @@ export default function ProfilePage() {
         about: profileData.about || '',
         location: profileData.location || ''
       });
+      
+      // Load posts for this user
+      fetchUserPosts(profileData._id || profileData.id);
     } catch (err) {
       toast.error('Failed to load profile');
       navigate('/feed');
@@ -66,8 +100,25 @@ export default function ProfilePage() {
   };
 
   useEffect(() => {
-    fetchProfile();
-  }, [id, currentUser]);
+    const currentUserId = currentUser?._id || currentUser?.id;
+    const isOwn = !id || id === currentUserId;
+
+    if (isOwn) {
+      setIsOwner(true);
+      if (currentUser) {
+        setProfile(currentUser);
+        setLoading(false);
+        // Background fetch without showing full page loader
+        fetchProfile(false);
+        fetchUserPosts(currentUserId);
+      } else {
+        fetchProfile(true);
+      }
+    } else {
+      setIsOwner(false);
+      fetchProfile(true);
+    }
+  }, [id, currentUser?._id, currentUser?.id]);
 
   // File Uploads
   const handlePhotoUpload = async (e, type) => {
@@ -311,12 +362,20 @@ export default function ProfilePage() {
                 <Edit className="h-4 w-4" /> Edit Profile
               </button>
             ) : (
-              <button 
-                onClick={handleConnect}
-                className="bg-linkedin-blue hover:bg-linkedin-blue-hover text-white text-sm font-semibold px-5 py-1.5 rounded-full transition shadow"
-              >
-                Connect
-              </button>
+              <div className="flex gap-2">
+                <button 
+                  onClick={handleConnect}
+                  className="bg-linkedin-blue hover:bg-linkedin-blue-hover text-white text-sm font-semibold px-5 py-1.5 rounded-full transition shadow"
+                >
+                  Connect
+                </button>
+                <Link
+                  to={`/messages?userId=${profile._id || profile.id}&name=${encodeURIComponent(profile.name)}&profilePhoto=${encodeURIComponent(profile.profilePhoto || '')}`}
+                  className="border border-linkedin-blue hover:bg-blue-50 text-linkedin-blue text-sm font-semibold px-5 py-1.5 rounded-full transition"
+                >
+                  Message
+                </Link>
+              </div>
             )}
           </div>
 
@@ -503,6 +562,36 @@ export default function ProfilePage() {
             <p className="text-sm text-gray-500 col-span-2">No skills listed.</p>
           )}
         </div>
+      </div>
+
+      {/* 5. Posts & Activity Section */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm space-y-4">
+        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+          <Edit3 className="h-5 w-5 text-gray-500" /> Posts & Activity
+        </h3>
+
+        {loadingPosts ? (
+          <div className="flex justify-center py-6">
+            <Loader2 className="animate-spin h-6 w-6 text-linkedin-blue" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {userPosts.map((post) => (
+              <PostCard
+                key={post._id || post.id}
+                post={post}
+                onPostDeleted={(deletedId) => setUserPosts(prev => prev.filter(p => p._id !== deletedId && p.id !== deletedId))}
+                onPostUpdated={(updatedPost) => {
+                  const updatedId = updatedPost._id || updatedPost.id;
+                  setUserPosts(prev => prev.map(p => (p._id === updatedId || p.id === updatedId) ? { ...p, ...updatedPost } : p));
+                }}
+              />
+            ))}
+            {userPosts.length === 0 && (
+              <p className="text-sm text-gray-500">No posts shared yet.</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* --- MODALS AND EDIT FORMS --- */}

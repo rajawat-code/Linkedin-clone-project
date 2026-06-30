@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../context/AuthContext';
 import API from '../api/axios';
@@ -46,7 +47,7 @@ export default function FeedPage() {
   useEffect(() => {
     fetchFeed();
     fetchSuggestions();
-  }, [user]);
+  }, [user?._id, user?.id]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -228,17 +229,19 @@ export default function FeedPage() {
               return (
                 <div key={sugId} className="flex gap-2 items-start justify-between">
                   <div className="flex gap-2 min-w-0">
-                    {sug.profilePhoto ? (
-                      <img src={sug.profilePhoto} alt={sug.name} className="h-9 w-9 rounded-full object-cover mt-0.5" />
-                    ) : (
-                      <div className="h-9 w-9 rounded-full bg-gray-300 flex items-center justify-center text-white text-xs font-bold mt-0.5">
-                        {sug.name?.charAt(0)}
-                      </div>
-                    )}
+                    <Link to={`/profile/${sugId}`}>
+                      {sug.profilePhoto ? (
+                        <img src={sug.profilePhoto} alt={sug.name} className="h-9 w-9 rounded-full object-cover mt-0.5" />
+                      ) : (
+                        <div className="h-9 w-9 rounded-full bg-gray-300 flex items-center justify-center text-white text-xs font-bold mt-0.5">
+                          {sug.name?.charAt(0)}
+                        </div>
+                      )}
+                    </Link>
                     <div className="min-w-0">
-                      <span className="font-bold text-xs text-gray-900 hover:text-linkedin-blue hover:underline truncate block">
+                      <Link to={`/profile/${sugId}`} className="font-bold text-xs text-gray-900 hover:text-linkedin-blue hover:underline truncate block">
                         {sug.name}
-                      </span>
+                      </Link>
                       <span className="text-[10px] text-gray-500 line-clamp-1 block leading-tight">{sug.headline || 'LinkedIn Member'}</span>
                     </div>
                   </div>

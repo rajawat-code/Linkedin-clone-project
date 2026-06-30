@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import API from '../api/axios';
 import toast from 'react-hot-toast';
 import { Loader2, MessageSquare } from 'lucide-react';
@@ -8,9 +9,15 @@ import { useAuth } from '../context/AuthContext';
 
 export default function MessagesPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [conversationsLoaded, setConversationsLoaded] = useState(false);
+
+  const targetUserId = searchParams.get('userId');
+  const targetName = searchParams.get('name');
+  const targetPhoto = searchParams.get('profilePhoto');
 
   const fetchConversations = async (silent = false) => {
     if (!silent) setLoading(true);
@@ -31,12 +38,40 @@ export default function MessagesPage() {
       toast.error('Failed to load conversations');
     } finally {
       if (!silent) setLoading(false);
+      setConversationsLoaded(true);
     }
   };
 
   useEffect(() => {
     fetchConversations();
   }, []);
+
+  // Handle auto-focus or initialization of chat based on query params
+  useEffect(() => {
+    if (conversationsLoaded && targetUserId) {
+      const existing = conversations.find(conv => {
+        const participants = conv.participants || [];
+        return participants.some(p => (p._id || p.id) === targetUserId);
+      });
+      if (existing) {
+        setActiveConversation(existing);
+      } else {
+        const tempConv = {
+          _id: `temp_${targetUserId}`,
+          participants: [
+            user || {},
+            {
+              _id: targetUserId,
+              name: targetName || 'LinkedIn Member',
+              profilePhoto: targetPhoto || ''
+            }
+          ],
+          messages: []
+        };
+        setActiveConversation(tempConv);
+      }
+    }
+  }, [conversationsLoaded, conversations, targetUserId, targetName, targetPhoto, user]);
 
   const handleSelectConversation = (conv) => {
     setActiveConversation(conv);
@@ -58,10 +93,10 @@ export default function MessagesPage() {
   const recipient = getRecipientUser();
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-140px)] min-h-[500px]">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 h-[calc(100vh-140px)] min-h-[500px]">
       
       {/* LHS: Conversation List */}
-      <div className="md:col-span-1 h-full">
+      <div className={`md:col-span-1 h-full ${activeConversation ? 'hidden md:block' : 'block'}`}>
         {loading && conversations.length === 0 ? (
           <div className="flex justify-center items-center h-full bg-white border border-gray-200 rounded-lg">
             <Loader2 className="animate-spin h-8 w-8 text-linkedin-blue" />
@@ -76,12 +111,13 @@ export default function MessagesPage() {
       </div>
 
       {/* RHS: Active Chat Window */}
-      <div className="md:col-span-2 h-full">
+      <div className={`md:col-span-2 h-full ${activeConversation ? 'block' : 'hidden md:block'}`}>
         {activeConversation && recipient ? (
           <ChatWindow
             conversationId={activeConvId}
             recipient={recipient}
             onMessageReceived={handleMessageUpdate}
+            onBack={() => setActiveConversation(null)}
           />
         ) : (
           <div className="bg-white border border-gray-200 rounded-lg h-full flex flex-col justify-center items-center text-center p-6 text-gray-500 shadow-sm">

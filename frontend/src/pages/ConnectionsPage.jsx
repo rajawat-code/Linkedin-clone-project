@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import API from '../api/axios';
 import toast from 'react-hot-toast';
 import { Users, UserPlus, UserCheck, Trash2, Check, X, Search, Loader2 } from 'lucide-react';
@@ -191,7 +191,7 @@ export default function ConnectionsPage() {
                     const connId = c._id || c.id;
                     return (
                       <div key={connId} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-sm transition">
-                        <div className="flex gap-3 min-w-0">
+                        <Link to={`/profile/${connId}`} className="flex gap-3 min-w-0 group">
                           {c.profilePhoto ? (
                             <img src={c.profilePhoto} alt={c.name} className="h-12 w-12 rounded-full object-cover" />
                           ) : (
@@ -200,17 +200,25 @@ export default function ConnectionsPage() {
                             </div>
                           )}
                           <div className="min-w-0">
-                            <h4 className="font-bold text-sm text-gray-900 truncate">{c.name}</h4>
+                            <h4 className="font-bold text-sm text-gray-900 group-hover:text-linkedin-blue group-hover:underline truncate">{c.name}</h4>
                             <p className="text-xs text-gray-500 truncate mt-0.5">{c.headline || 'LinkedIn Member'}</p>
                           </div>
+                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            to={`/messages?userId=${connId}&name=${encodeURIComponent(c.name)}&profilePhoto=${encodeURIComponent(c.profilePhoto || '')}`}
+                            className="border border-linkedin-blue hover:bg-blue-50 text-linkedin-blue text-xs font-semibold px-4 py-1.5 rounded-full transition"
+                          >
+                            Message
+                          </Link>
+                          <button
+                            onClick={() => handleRemove(connId)}
+                            className="text-gray-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-full transition"
+                            title="Remove Connection"
+                          >
+                            <Trash2 className="h-4.5 w-4.5" />
+                          </button>
                         </div>
-                        <button
-                          onClick={() => handleRemove(connId)}
-                          className="text-gray-400 hover:text-red-600 p-2 hover:bg-red-50 rounded-full transition"
-                          title="Remove Connection"
-                        >
-                          <Trash2 className="h-4.5 w-4.5" />
-                        </button>
                       </div>
                     );
                   })}
@@ -237,7 +245,7 @@ export default function ConnectionsPage() {
                     const sender = req.sender || {};
                     return (
                       <div key={reqId} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-sm transition">
-                        <div className="flex gap-3 min-w-0">
+                        <Link to={`/profile/${sender._id || sender.id}`} className="flex gap-3 min-w-0 group">
                           {sender.profilePhoto ? (
                             <img src={sender.profilePhoto} alt={sender.name} className="h-12 w-12 rounded-full object-cover" />
                           ) : (
@@ -246,10 +254,10 @@ export default function ConnectionsPage() {
                             </div>
                           )}
                           <div className="min-w-0">
-                            <h4 className="font-bold text-sm text-gray-900 truncate">{sender.name}</h4>
+                            <h4 className="font-bold text-sm text-gray-900 group-hover:text-linkedin-blue group-hover:underline truncate">{sender.name}</h4>
                             <p className="text-xs text-gray-500 truncate mt-0.5">{sender.headline || 'LinkedIn Member'}</p>
                           </div>
-                        </div>
+                        </Link>
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleAccept(reqId)}
@@ -305,7 +313,7 @@ export default function ConnectionsPage() {
                     const uId = user._id || user.id;
                     return (
                       <div key={uId} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:shadow-sm transition">
-                        <div className="flex gap-3 min-w-0">
+                        <Link to={`/profile/${uId}`} className="flex gap-3 min-w-0 group">
                           {user.profilePhoto ? (
                             <img src={user.profilePhoto} alt={user.name} className="h-12 w-12 rounded-full object-cover" />
                           ) : (
@@ -314,10 +322,10 @@ export default function ConnectionsPage() {
                             </div>
                           )}
                           <div className="min-w-0">
-                            <h4 className="font-bold text-sm text-gray-900 truncate">{user.name}</h4>
+                            <h4 className="font-bold text-sm text-gray-900 group-hover:text-linkedin-blue group-hover:underline truncate">{user.name}</h4>
                             <p className="text-xs text-gray-500 truncate mt-0.5">{user.headline || 'LinkedIn Member'}</p>
                           </div>
-                        </div>
+                        </Link>
                         <button
                           onClick={() => handleConnect(uId)}
                           className="border border-linkedin-blue hover:bg-blue-50 text-linkedin-blue text-xs font-semibold px-4 py-1.5 rounded-full transition"

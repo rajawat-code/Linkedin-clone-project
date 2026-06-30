@@ -41,7 +41,7 @@ export default function ConversationList({ conversations, activeConversationId, 
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate mt-0.5">{lastMsg.messageText || 'No messages yet'}</p>
+                <p className="text-xs text-gray-500 truncate mt-0.5">{lastMsg.content || lastMsg.messageText || 'No messages yet'}</p>
               </div>
 
               {unread > 0 && (
