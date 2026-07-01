@@ -6,7 +6,7 @@ const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 const app = express();
 
-// CORS options
+
 const corsOptions = {
   origin: (origin, callback) => {
     // Dynamically allow any origin to resolve CORS issues between Vercel and Render
@@ -20,7 +20,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Middlewares
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -36,7 +36,7 @@ app.use(cookieParser());
 // app.use('/api', apiLimiter);
 
 
-// Import Routes
+
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const postRoutes = require('./routes/postRoutes');
@@ -47,7 +47,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const companyRoutes = require('./routes/companyRoutes');
 const jobRoutes = require('./routes/jobRoutes');
 
-// Mount Routes
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
@@ -58,12 +58,12 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/jobs', jobRoutes);
 
-// Root Endpoint
+
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to the LinkedIn Clone Backend API!' });
 });
 
-// Error handling middleware
+
 app.use(notFound);
 app.use(errorHandler);
 
