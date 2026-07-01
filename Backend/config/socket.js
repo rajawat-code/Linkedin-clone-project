@@ -8,28 +8,8 @@ const initSocket = (server) => {
     pingTimeout: 60000,
     cors: {
       origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        const allowedOrigins = [
-          process.env.FRONTEND_URL,
-          'https://linkedin-project-eta.vercel.app',
-          'http://localhost:3000',
-          'https://linkedin-clone-project-1.onrender.com'
-        ]
-          .filter(Boolean)
-          .map(url => {
-            try {
-              const parsed = new URL(url.trim().replace(/^["']|["']$/g, ''));
-              return parsed.origin;
-            } catch (e) {
-              return url.trim().replace(/^["']|["']$/g, '').replace(/\/$/, '');
-            }
-          });
         
-        const normalizedOrigin = origin.trim().replace(/\/$/, '');
-        if (allowedOrigins.includes(normalizedOrigin) || normalizedOrigin.endsWith('vercel.app') || normalizedOrigin.startsWith('http://localhost:')) {
-          return callback(null, true);
-        }
-        return callback(new Error('Not allowed by CORS'));
+        callback(null, true);
       },
       methods: ['GET', 'POST'],
       credentials: true,

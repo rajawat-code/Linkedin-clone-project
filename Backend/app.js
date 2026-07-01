@@ -7,40 +7,14 @@ const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 const app = express();
 
 // CORS options
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  'https://linkedin-project-eta.vercel.app',
-  'http://localhost:3000',
-]
-  .filter(Boolean)
-  .map(url => {
-    try {
-      const parsed = new URL(url.trim().replace(/^["']|["']$/g, ''));
-      return parsed.origin;
-    } catch (e) {
-      return url.trim().replace(/^["']|["']$/g, '').replace(/\/$/, '');
-    }
-  });
-
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, postman)
-    if (!origin) return callback(null, true);
-    
-    const normalizedOrigin = origin.trim().replace(/\/$/, '');
-    
-    if (allowedOrigins.includes(normalizedOrigin)) {
-      return callback(null, true);
-    }
-    
-    // Support vercel.app subdomains and localhost
-    if (normalizedOrigin.endsWith('vercel.app') || normalizedOrigin.startsWith('http://localhost:')) {
-      return callback(null, true);
-    }
-    
-    return callback(new Error('Not allowed by CORS'));
+    // Dynamically allow any origin to resolve CORS issues between Vercel and Render
+    callback(null, true);
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cookie'],
   optionsSuccessStatus: 200,
 };
 
