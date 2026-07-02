@@ -28,5 +28,7 @@ router.delete('/:id', postController.deletePost);
 router.post('/:id/like', postController.toggleLikePost);
 router.post('/:id/save', postController.savePost);
 router.delete('/:id/save', postController.removeSavedPost);
+router.post('/:id/share', postController.sharePost);
+router.get('/:id', postController.getPostById);
 
 module.exports = router;

@@ -67,15 +67,7 @@ const toggleLikePost = async (userId, postId) => {
 };
 
 const getFeed = async (userId) => {
-  const user = await User.findById(userId);
-  if (!user) {
-    throw new Error('User not found');
-  }
-
-  // Feed consists of own posts + posts from connections
-  const authorIds = [userId, ...user.connections];
-
-  const posts = await Post.find({ author: { $in: authorIds } })
+  const posts = await Post.find()
     .populate('author', 'name email headline profilePicture')
     .populate({
       path: 'comments',
@@ -102,7 +94,27 @@ const addComment = async (userId, postId, commentText) => {
     $push: { comments: comment._id },
   });
 
-  return comment;
+  const populatedComment = await Comment.findById(comment._id)
+    .populate('userId', 'name email headline profilePicture');
+
+  return populatedComment;
+};
+
+const sharePost = async (userId, postId) => {
+  const post = await Post.findById(postId);
+  if (!post) {
+    throw new Error('Post not found');
+  }
+
+  const shared = post.shares.includes(userId);
+  if (shared) {
+    post.shares = post.shares.filter((id) => id.toString() !== userId.toString());
+  } else {
+    post.shares.push(userId);
+  }
+
+  await post.save();
+  return { post, shared: !shared };
 };
 
 const editComment = async (userId, commentId, commentText) => {
@@ -170,4 +182,5 @@ module.exports = {
   savePost,
   removeSavedPost,
   getSavedPosts,
+  sharePost,
 };

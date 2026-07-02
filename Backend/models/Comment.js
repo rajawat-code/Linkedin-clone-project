@@ -19,4 +19,7 @@ const CommentSchema = new mongoose.Schema({
   timestamps: true,
 });
 
+CommentSchema.index({ postId: 1 });
+CommentSchema.index({ userId: 1 });
+
 module.exports = mongoose.model('Comment', CommentSchema);

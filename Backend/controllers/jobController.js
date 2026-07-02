@@ -53,9 +53,14 @@ exports.searchJobs = asyncHandler(async (req, res) => {
   const searchTerm = q || title;
   const filter = {};
   if (searchTerm) {
+    const Company = require('../models/Company');
+    const matchedCompanies = await Company.find({ name: { $regex: searchTerm, $options: 'i' } }).lean();
+    const companyIds = matchedCompanies.map((c) => c._id);
+
     filter.$or = [
       { title: { $regex: searchTerm, $options: 'i' } },
       { description: { $regex: searchTerm, $options: 'i' } },
+      { company: { $in: companyIds } },
     ];
   }
   if (location) {
@@ -64,7 +69,8 @@ exports.searchJobs = asyncHandler(async (req, res) => {
 
   const jobs = await Job.find(filter)
     .populate('company', 'name logo industry')
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 
   return apiResponse.success(res, 'Jobs retrieved successfully', jobs);
 });

@@ -46,6 +46,7 @@ const messageRoutes = require('./routes/messageRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const companyRoutes = require('./routes/companyRoutes');
 const jobRoutes = require('./routes/jobRoutes');
+const searchRoutes = require('./routes/searchRoutes');
 
 
 app.use('/api/auth', authRoutes);
@@ -57,6 +58,7 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/jobs', jobRoutes);
+app.use('/api/search', searchRoutes);
 
 
 app.get('/', (req, res) => {

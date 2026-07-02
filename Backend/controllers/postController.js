@@ -57,3 +57,36 @@ exports.getSavedPosts = asyncHandler(async (req, res) => {
   const saved = await postService.getSavedPosts(req.user._id);
   return apiResponse.success(res, 'Saved posts retrieved successfully', saved);
 });
+
+exports.sharePost = asyncHandler(async (req, res) => {
+  const result = await postService.sharePost(req.user._id, req.params.id);
+  const action = result.shared ? 'shared' : 'unshared';
+
+  if (result.shared) {
+    const { createNotification } = require('./notificationController');
+    await createNotification(
+      result.post.author,
+      req.user._id,
+      'share',
+      `${req.user.name} shared your post`,
+      result.post._id
+    );
+  }
+
+  return apiResponse.success(res, `Post ${action} successfully`, result.post);
+});
+
+exports.getPostById = asyncHandler(async (req, res) => {
+  const Post = require('../models/Post');
+  const post = await Post.findById(req.params.id)
+    .populate('author', 'name email headline profilePicture')
+    .populate({
+      path: 'comments',
+      populate: { path: 'userId', select: 'name email headline profilePicture' },
+    });
+  if (!post) {
+    res.status(404);
+    throw new Error('Post not found');
+  }
+  return apiResponse.success(res, 'Post retrieved successfully', post);
+});
